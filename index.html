@@ -657,7 +657,7 @@
 <!-- 顶部栏 -->
 <header class="header">
   <div>
-    <div class="header-title" id="pageTitle">✨ 张雯老师的数字分身</div>
+    <div class="header-title" id="pageTitle">✨ 罗蒙老师的数字分身</div>
     <div class="header-subtitle">AI 智能助教 · 随时为你解答</div>
   </div>
   <div class="header-actions">
@@ -675,7 +675,7 @@
       <div class="avatar-ring"></div>
       <div class="avatar-ring"></div>
       <div class="avatar-container" id="avatarContainer">
-        <img class="avatar-photo" src="avatar.jpg" alt="张雯老师头像"
+        <img class="avatar-photo" src="avatar.jpg" alt="罗蒙老师头像"
           onerror="this.style.display='none'; document.getElementById('avatarFallback').style.display='flex'">
         <!-- 照片加载失败时的备用 -->
         <div id="avatarFallback" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:64px;background:linear-gradient(135deg,#4A3CC4,#6B5CE7)">👩‍🏫</div>
@@ -689,7 +689,7 @@
       <span id="statusText">在线解答中</span>
     </div>
 
-    <div class="avatar-name" id="teacherName">张雯老师</div>
+    <div class="avatar-name" id="teacherName">罗蒙老师</div>
     <div class="avatar-role" id="teacherRole">您的专属 AI 数字助教</div>
 
     <!-- 声纹可视化 -->
@@ -861,15 +861,15 @@ function speak(text, btn) {
   var utter = new SpeechSynthesisUtterance(clean);
   utter.lang = 'zh-CN';
   utter.rate = 0.92;
-  utter.pitch = 1.15;
+  utter.pitch = 0.90;
   utter.volume = 1;
 
-  // 优先选最自然的中文女声
+  // 优先选最自然的中文男声
   var voices = window.speechSynthesis.getVoices();
-  var femaleKeywords = ['Xiaoxiao','晓晓','Xiaoyi','晓伊','Huihui','惠惠','Yaoyao','Tingting','tingting','female','Female','woman'];
+  var maleKeywords = ['Yunxi','云希','Yunyang','云扬','Kangkang','Yunfeng','Yunxia','male','Male'];
   var zhVoice = null;
-  for (var ki = 0; ki < femaleKeywords.length; ki++) {
-    var kw = femaleKeywords[ki];
+  for (var ki = 0; ki < maleKeywords.length; ki++) {
+    var kw = maleKeywords[ki];
     for (var vi = 0; vi < voices.length; vi++) {
       if (voices[vi].lang.indexOf('zh') === 0 && voices[vi].name.indexOf(kw) !== -1) {
         zhVoice = voices[vi]; break;
