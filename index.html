@@ -402,11 +402,10 @@
 
 <script src="qrcode.min.js"></script>
 <script>
-// ========== OpenRouter 大模型配置 ==========
-// OpenRouter API Key（通过 HTTP Referrer 限制保护，只能从 GitHub Pages 调用）
-const OPENROUTER_API_KEY = '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';
-const API_BASE = 'https://openrouter.ai/api/v1/chat/completions';
-const SITE_URL = 'https://4ktbgd9gys-cyber.github.io/digital-teacher-luomeng/';
+// ========== 硅基流动大模型配置 ==========
+// 硅基流动 API（国内直连，支持 Claude 等模型）
+const API_KEY = 'sk-ilqauwdmqhekycnbruxzwatkdncwljzjkaafgxsmnusxdhup';
+const API_BASE = 'https://api.siliconflow.cn/v1/chat/completions';
 
 const SYSTEM_PROMPT = `你是罗蒙教授的AI健康顾问数字分身。罗蒙教授的详细信息如下：
 
@@ -578,30 +577,28 @@ function sendMessage() {
   // 添加用户消息到对话历史
   conversationHistory.push({ role: 'user', content: text });
 
-  console.log('[DEBUG] 开始调用 OpenRouter:', API_BASE);
+  console.log('[DEBUG] 开始调用硅基流动:', API_BASE);
   
-  // 直接调用 OpenRouter API（带 HTTP Referrer 限制）
+  // 直接调用硅基流动 API（国内直连）
   fetch(API_BASE, {
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + OPENROUTER_API_KEY,
-      'HTTP-Referer': SITE_URL,
-      'X-Title': '罗蒙教授AI健康顾问'
+      'Authorization': 'Bearer ' + API_KEY
     },
     body: JSON.stringify({
-      model: 'z-ai/glm-4.5-air:free',
+      model: 'THUDM/glm-4-flash',
       messages: [{ role: 'system', content: SYSTEM_PROMPT }].concat(conversationHistory),
-      max_tokens: 600,
+      max_tokens: 800,
       temperature: 0.75
     })
   })
   .then(function(res) { 
-    console.log('[DEBUG] OpenRouter 响应状态:', res.status);
+    console.log('[DEBUG] 硅基流动响应状态:', res.status);
     return res.json(); 
   })
   .then(function(data) {
-    console.log('[DEBUG] OpenRouter 返回数据:', JSON.stringify(data).substring(0, 200));
+    console.log('[DEBUG] 硅基流动返回数据:', JSON.stringify(data).substring(0, 200));
     removeTyping();
     var answer;
     if (data.choices && data.choices[0] && data.choices[0].message) {
@@ -620,7 +617,7 @@ function sendMessage() {
   })
   .catch(function(err) {
     removeTyping();
-    console.error('[DEBUG] OpenRouter 调用失败:', err.message, err);
+    console.error('[DEBUG] 硅基流动调用失败:', err.message, err);
     var kbAnswer = findAnswer(text);
     addMessage('bot', kbAnswer, true);
   });
