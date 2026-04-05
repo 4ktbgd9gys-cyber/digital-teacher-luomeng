@@ -565,7 +565,7 @@ function sendMessage() {
   var input = document.getElementById('msgInput');
   var text = input.value.trim();
   console.log('[DEBUG] sendMessage called, text:', text);
-  console.log('[DEBUG] WORKER_URL:', WORKER_URL);
+  console.log('[DEBUG] API_BASE:', API_BASE);
   if (!text) {
     console.log('[DEBUG] 空消息，不发送');
     return;
