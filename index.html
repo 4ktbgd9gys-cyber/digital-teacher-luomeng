@@ -404,7 +404,14 @@
 <script>
 // ========== OpenRouter 大模型配置 ==========
 const OPENROUTER_API_KEY = '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';
-const OPENROUTER_MODEL = 'z-ai/glm-4.5-air:free'; // 智谱GLM免费模型（中文支持好）
+// 优先使用智谱GLM免费模型，中文支持最好
+const OPENROUTER_MODEL = 'z-ai/glm-4.5-air:free';
+// 备用免费模型（按优先级）
+const FALLBACK_MODELS = [
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'google/gemma-3-27b-it:free',
+  'qwen/qwen2.5-72b-instruct:free'
+];
 
 const SYSTEM_PROMPT = `你是罗蒙教授的AI健康顾问数字分身。罗蒙教授的详细信息如下：
 
@@ -572,41 +579,71 @@ function sendMessage() {
   conversationHistory.push({ role: 'user', content: text });
 
   // 调用 OpenRouter 大模型
-  fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ' + OPENROUTER_API_KEY,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://4ktbgd9gys-cyber.github.io/digital-teacher-luomeng/',
-      'X-Title': '罗蒙教授AI健康顾问'
-    },
-    body: JSON.stringify({
-      model: OPENROUTER_MODEL,
-      messages: [{ role: 'system', content: SYSTEM_PROMPT }].concat(conversationHistory),
-      max_tokens: 800,
-      temperature: 0.7
-    })
-  })
-  .then(function(res) { return res.json(); })
-  .then(function(data) {
+  callOpenRouter(OPENROUTER_MODEL, conversationHistory, function(success, answer) {
     removeTyping();
-    var answer;
-    if (data.choices && data.choices[0] && data.choices[0].message) {
-      answer = data.choices[0].message.content.trim();
-    } else if (data.error) {
-      // API 出错，回退到知识库
-      answer = findAnswer(text);
+    if (success && answer) {
+      conversationHistory.push({ role: 'assistant', content: answer });
+      addMessage('bot', answer, true);
     } else {
-      answer = findAnswer(text);
+      // 大模型不可用，降级到知识库
+      console.warn('大模型调用失败，降级到知识库。错误:', answer);
+      var kbAnswer = findAnswer(text);
+      addMessage('bot', kbAnswer, true);
     }
-    conversationHistory.push({ role: 'assistant', content: answer });
-    addMessage('bot', answer, true);
-  })
-  .catch(function(err) {
-    removeTyping();
-    var fallback = findAnswer(text);
-    addMessage('bot', fallback, true);
   });
+}
+
+// 统一的 OpenRouter 调用函数（带自动重试备用模型）
+function callOpenRouter(model, history, callback) {
+  var allModels = [model].concat(FALLBACK_MODELS);
+  var currentIndex = 0;
+
+  function tryNext() {
+    if (currentIndex >= allModels.length) {
+      callback(false, null); // 所有模型都失败
+      return;
+    }
+    var currentModel = allModels[currentIndex];
+    var reqBody = {
+      model: currentModel,
+      messages: [{ role: 'system', content: SYSTEM_PROMPT }].concat(history),
+      max_tokens: 600,
+      temperature: 0.75
+    };
+
+    fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + OPENROUTER_API_KEY,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://4ktbgd9gys-cyber.github.io/digital-teacher-luomeng/',
+        'X-Title': '罗蒙教授AI健康顾问'
+      },
+      body: JSON.stringify(reqBody)
+    })
+    .then(function(res) {
+      return res.json().then(function(data) {
+        return { ok: res.ok, data: data };
+      });
+    })
+    .then(function(result) {
+      if (result.ok && result.data.choices && result.data.choices[0] && result.data.choices[0].message) {
+        callback(true, result.data.choices[0].message.content.trim());
+      } else {
+        var errMsg = result.data && result.data.error ? result.data.error.message : '未知错误';
+        console.warn('模型 ' + currentModel + ' 失败: ' + errMsg);
+        currentIndex++;
+        tryNext(); // 尝试下一个模型
+      }
+    })
+    .catch(function(err) {
+      console.warn('模型 ' + currentModel + ' 网络错误: ' + err.message);
+      currentIndex++;
+      tryNext();
+    });
+  }
+
+  tryNext();
 }
 
 function showTyping() {
