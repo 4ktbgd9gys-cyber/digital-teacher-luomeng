@@ -1,0 +1,846 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>后台管理 · 数字分身助教</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary: #6B5CE7;
+    --primary-light: #8B7FF0;
+    --success: #07C160;
+    --danger: #FF4757;
+    --warning: #FFA726;
+    --bg: #0F1219;
+    --bg2: #161B2E;
+    --bg3: #1E2540;
+    --border: rgba(255,255,255,0.1);
+    --text: #E8E8F0;
+    --muted: #7777AA;
+    --glass: rgba(255,255,255,0.05);
+  }
+
+  body {
+    font-family: 'Noto Sans SC', -apple-system, sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* 侧边栏 */
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0;
+    width: 220px; background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    z-index: 10;
+  }
+
+  .logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-icon { font-size: 28px; margin-bottom: 6px; }
+  .logo-title { font-size: 15px; font-weight: 700; }
+  .logo-sub { font-size: 11px; color: var(--muted); }
+
+  .nav { padding: 16px 12px; flex: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 10px;
+    cursor: pointer; font-size: 14px; color: var(--muted);
+    margin-bottom: 4px; transition: all 0.2s; user-select: none;
+  }
+  .nav-item:hover { background: var(--glass); color: var(--text); }
+  .nav-item.active { background: rgba(107,92,231,0.2); color: var(--primary-light); }
+  .nav-item .icon { font-size: 18px; }
+
+  .sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+  .view-btn {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary), #4A3CC4);
+    color: #fff; font-size: 13px; font-weight: 500;
+    cursor: pointer; border: none; width: 100%;
+    transition: all 0.2s; text-decoration: none;
+  }
+  .view-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(107,92,231,0.4); }
+
+  /* 主内容 */
+  .main { margin-left: 220px; padding: 28px 32px; min-height: 100vh; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+  /* 统计卡片 */
+  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px;
+  }
+  .stat-icon { font-size: 28px; margin-bottom: 8px; }
+  .stat-val { font-size: 28px; font-weight: 700; }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* 基本信息 */
+  .card {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px; margin-bottom: 20px;
+  }
+  .card-title {
+    font-size: 16px; font-weight: 700; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 12px; color: var(--muted); }
+  .form-input {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px;
+    color: var(--text); font-size: 14px; font-family: inherit;
+    transition: border-color 0.2s; outline: none;
+  }
+  .form-input:focus { border-color: var(--primary); }
+  .form-input::placeholder { color: var(--muted); }
+  .form-textarea { min-height: 80px; resize: vertical; }
+
+  /* 工具栏 */
+  .toolbar {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .search-box {
+    flex: 1; min-width: 200px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 9px 14px;
+    color: var(--text); font-size: 14px; font-family: inherit;
+    outline: none; transition: border-color 0.2s;
+  }
+  .search-box:focus { border-color: var(--primary); }
+  .search-box::placeholder { color: var(--muted); }
+
+  .btn {
+    padding: 9px 18px; border-radius: 10px;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    border: none; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--primary), #4A3CC4); color: #fff; }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(107,92,231,0.4); }
+  .btn-success { background: rgba(7,193,96,0.15); color: var(--success); border: 1px solid rgba(7,193,96,0.3); }
+  .btn-success:hover { background: rgba(7,193,96,0.25); }
+  .btn-danger { background: rgba(255,71,87,0.1); color: var(--danger); border: 1px solid rgba(255,71,87,0.2); }
+  .btn-danger:hover { background: rgba(255,71,87,0.2); }
+  .btn-ghost { background: var(--glass); border: 1px solid var(--border); color: var(--text); }
+  .btn-ghost:hover { background: rgba(255,255,255,0.1); }
+
+  /* 知识库表格 */
+  .kb-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+  .kb-table th {
+    font-size: 11px; color: var(--muted); text-align: left;
+    padding: 6px 14px; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .kb-row {
+    background: var(--bg3); border-radius: 10px;
+    transition: all 0.2s; cursor: default;
+  }
+  .kb-row:hover { background: rgba(107,92,231,0.1); }
+  .kb-row td {
+    padding: 14px; font-size: 13px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .kb-row td:first-child { border-left: 1px solid var(--border); border-radius: 10px 0 0 10px; }
+  .kb-row td:last-child { border-right: 1px solid var(--border); border-radius: 0 10px 10px 0; }
+  .kb-q { font-weight: 500; color: var(--primary-light); }
+  .kb-a { color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .kb-actions { display: flex; gap: 8px; white-space: nowrap; }
+  .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 7px; }
+  .kb-idx { color: var(--muted); font-size: 12px; }
+
+  /* 添加表单弹窗 */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: #161B2E; border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 18px; padding: 28px; width: 540px; max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: modal-in 0.25s ease-out;
+  }
+  @keyframes modal-in {
+    from { opacity: 0; transform: scale(0.95) translateY(15px); }
+    to { opacity: 1; transform: none; }
+  }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+  .modal-body { display: flex; flex-direction: column; gap: 14px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+
+  /* 空状态 */
+  .empty-state {
+    text-align: center; padding: 60px 20px; color: var(--muted);
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+  /* 导入导出 */
+  .import-area {
+    border: 2px dashed var(--border); border-radius: 12px;
+    padding: 24px; text-align: center; color: var(--muted);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .import-area:hover { border-color: var(--primary); color: var(--primary-light); }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 999;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 18px; font-size: 13px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    display: flex; align-items: center; gap: 10px;
+    animation: msg-in 0.25s ease-out;
+    max-width: 300px;
+  }
+  @keyframes msg-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* 密码保护 */
+  .lock-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: #0A0E1A;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+  }
+  .lock-box { text-align: center; }
+  .lock-icon { font-size: 56px; margin-bottom: 20px; }
+  .lock-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .lock-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+  .lock-input {
+    width: 280px; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 18px; color: var(--text);
+    font-size: 18px; text-align: center; letter-spacing: 4px;
+    outline: none; margin-bottom: 14px; font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  .lock-input:focus { border-color: var(--primary); }
+  .lock-btn {
+    width: 280px; padding: 12px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary), #4A3CC4);
+    border: none; color: #fff; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .lock-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(107,92,231,0.4); }
+  .lock-err { font-size: 12px; color: var(--danger); margin-top: 8px; min-height: 18px; }
+
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 20px 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 密码锁 -->
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-box">
+    <div class="lock-icon">🔐</div>
+    <div class="lock-title">后台管理</div>
+    <div class="lock-sub">请输入管理员密码进入</div>
+    <input class="lock-input" type="password" id="pwdInput" placeholder="••••••" maxlength="20"
+      onkeydown="if(event.key==='Enter')checkPwd()">
+    <br>
+    <button class="lock-btn" onclick="checkPwd()">进入管理后台</button>
+    <div class="lock-err" id="pwdErr"></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:16px">管理员密码已由老师设置</div>
+  </div>
+</div>
+
+<!-- 侧边栏 -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">✨</div>
+    <div class="logo-title">数字分身后台</div>
+    <div class="logo-sub">知识库管理系统</div>
+  </div>
+  <div class="nav">
+    <div class="nav-item active" onclick="showPage('dashboard', this)">
+      <span class="icon">📊</span> 数据概览
+    </div>
+    <div class="nav-item" onclick="showPage('profile', this)">
+      <span class="icon">👩‍🏫</span> 数字人设置
+    </div>
+    <div class="nav-item" onclick="showPage('knowledge', this)">
+      <span class="icon">📚</span> 知识库管理
+    </div>
+    <div class="nav-item" onclick="showPage('import', this)">
+      <span class="icon">📥</span> 批量导入
+    </div>
+    <div class="nav-item" onclick="showPage('questions', this)">
+      <span class="icon">📝</span> 问题搜集
+    </div>
+    <div class="nav-item" onclick="showPage('settings', this)">
+      <span class="icon">⚙️</span> 系统设置
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <a class="view-btn" href="index.html" target="_blank">
+      <span>👁️</span> 查看前台
+    </a>
+  </div>
+</nav>
+
+<!-- 主内容 -->
+<div class="main">
+
+  <!-- 概览页 -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-title">📊 数据概览</div>
+    <div class="page-sub">查看知识库状态和使用情况</div>
+    <div class="stats" id="statsGrid"></div>
+    <div class="card">
+      <div class="card-title">📌 最近添加的问答</div>
+      <div id="recentList"></div>
+    </div>
+  </div>
+
+  <!-- 数字人设置 -->
+  <div class="page" id="page-profile">
+    <div class="page-title">👩‍🏫 数字人设置</div>
+    <div class="page-sub">设置你的数字分身的名字、简介和欢迎语</div>
+    <div class="card">
+      <div class="card-title">✏️ 基本信息</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>老师姓名</label>
+          <input class="form-input" id="profileName" placeholder="例如：张老师、李教授">
+        </div>
+        <div class="form-group">
+          <label>职位/角色描述</label>
+          <input class="form-input" id="profileRole" placeholder="例如：数学老师 · 高三">
+        </div>
+        <div class="form-group" style="grid-column: 1/-1">
+          <label>欢迎语（学生打开时显示）</label>
+          <textarea class="form-input form-textarea" id="profileWelcome" placeholder="例如：你好同学！我是张老师的数字助手，有任何问题都可以问我~"></textarea>
+        </div>
+      </div>
+      <div style="margin-top: 16px">
+        <button class="btn btn-primary" onclick="saveProfile()">💾 保存设置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 知识库管理 -->
+  <div class="page" id="page-knowledge">
+    <div class="page-title">📚 知识库管理</div>
+    <div class="page-sub">添加、编辑和管理学生问答知识库</div>
+
+    <div class="toolbar">
+      <input class="search-box" id="kbSearch" placeholder="🔍 搜索问题或答案…" oninput="renderKB()">
+      <button class="btn btn-primary" onclick="openAddModal()">➕ 添加问答</button>
+      <button class="btn btn-success" onclick="exportKB()">📤 导出</button>
+      <button class="btn btn-ghost" onclick="renderKB()">🔄 刷新</button>
+    </div>
+
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <table class="kb-table">
+        <thead>
+          <tr>
+            <th style="width:40px">#</th>
+            <th style="width:35%">问题</th>
+            <th>答案</th>
+            <th style="width:120px">操作</th>
+          </tr>
+        </thead>
+        <tbody id="kbTableBody"></tbody>
+      </table>
+      <div id="kbEmpty" class="empty-state" style="display:none">
+        <div class="empty-icon">📭</div>
+        <div>暂无知识库内容</div>
+        <div style="font-size:12px;margin-top:6px">点击「添加问答」开始录入</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批量导入 -->
+  <div class="page" id="page-import">
+    <div class="page-title">📥 批量导入</div>
+    <div class="page-sub">通过 JSON 或文本格式批量导入知识库内容</div>
+
+    <div class="card">
+      <div class="card-title">📋 JSON 格式导入</div>
+      <div style="font-size:13px; color:var(--muted); margin-bottom:14px; line-height:1.7">
+        将以下格式的 JSON 粘贴到下方文本框，点击导入按钮即可批量添加：<br>
+        <code style="background:var(--bg2);padding:8px 12px;border-radius:8px;display:block;margin-top:8px;font-size:12px;color:#8B7FF0">[{"q": "问题1", "a": "答案1"}, {"q": "问题2", "a": "答案2"}]</code>
+      </div>
+      <textarea class="form-input form-textarea" id="importJson" style="min-height:160px;font-family:monospace;font-size:12px"
+        placeholder='[&#10;  {"q": "这道题怎么做？", "a": "首先分析题目条件..."},&#10;  {"q": "考试范围是什么？", "a": "本次考试范围包括..."}&#10;]'></textarea>
+      <div style="margin-top:14px; display:flex; gap:10px">
+        <button class="btn btn-primary" onclick="importJSON()">📥 导入 JSON</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('importJson').value=''">清空</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📝 逐行文本导入</div>
+      <div style="font-size:13px; color:var(--muted); margin-bottom:14px">
+        每行格式：<code style="background:var(--bg2);padding:2px 8px;border-radius:5px;color:#8B7FF0">问题 | 答案</code>（用竖线分隔）
+      </div>
+      <textarea class="form-input form-textarea" id="importText" style="min-height:160px;font-family:monospace;font-size:12px"
+        placeholder="这道题怎么做？ | 首先分析题目条件...&#10;考试范围是什么？ | 本次考试范围包括..."></textarea>
+      <div style="margin-top:14px">
+        <button class="btn btn-primary" onclick="importText()">📥 导入文本</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 问题搜集 -->
+  <div class="page" id="page-questions">
+    <div class="page-title">📝 学生问题搜集</div>
+    <div class="page-sub">查看学生提交的问题，可一键转为知识库条目</div>
+
+    <div class="toolbar">
+      <input class="search-box" id="qSearch" placeholder="🔍 搜索问题内容…" oninput="renderQuestions()">
+      <button class="btn btn-success" onclick="exportQuestions()">📤 导出</button>
+      <button class="btn btn-danger" onclick="clearQuestions()">🗑️ 清空</button>
+    </div>
+
+    <div class="stats" id="qStatsGrid" style="margin-bottom:20px"></div>
+
+    <div class="card" id="qCard">
+      <div id="qEmpty" class="empty-state" style="display:none">
+        <div class="empty-icon">📭</div>
+        <div>暂有学生提交问题</div>
+        <div style="font-size:12px;margin-top:6px">告诉同学们，可以在这里提交想问的问题</div>
+      </div>
+      <div id="qList"></div>
+    </div>
+  </div>
+
+  <!-- 系统设置 -->
+  <div class="page" id="page-settings">
+    <div class="page-title">⚙️ 系统设置</div>
+    <div class="page-sub">管理密码和系统数据</div>
+
+    <div class="card">
+      <div class="card-title">🔐 修改管理员密码</div>
+      <div class="form-grid" style="max-width:400px">
+        <div class="form-group">
+          <label>旧密码</label>
+          <input class="form-input" type="password" id="oldPwd" placeholder="当前密码">
+        </div>
+        <div class="form-group">
+          <label>新密码</label>
+          <input class="form-input" type="password" id="newPwd" placeholder="6位以上">
+        </div>
+      </div>
+      <div style="margin-top:14px">
+        <button class="btn btn-primary" onclick="changePwd()">🔒 修改密码</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🗂️ 数据管理</div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap">
+        <button class="btn btn-success" onclick="exportAll()">📦 导出全部数据</button>
+        <button class="btn btn-danger" onclick="clearAll()">🗑️ 清空知识库</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 添加/编辑弹窗 -->
+<div class="modal-overlay" id="kbModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">➕ 添加问答</div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>学生问题（关键词/完整问句均可）</label>
+        <input class="form-input" id="modalQ" placeholder="例如：这道题怎么解？作业截止时间？">
+      </div>
+      <div class="form-group">
+        <label>答案内容</label>
+        <textarea class="form-input form-textarea" id="modalA" style="min-height:120px" placeholder="输入详细的答案内容…"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveKBItem()">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== 密码验证 ==========
+const DEFAULT_PWD = '196710';
+function getPwd() { return localStorage.getItem('adminPwd') || DEFAULT_PWD; }
+
+function checkPwd() {
+  const val = document.getElementById('pwdInput').value;
+  if (val === getPwd()) {
+    document.getElementById('lockOverlay').style.display = 'none';
+    init();
+  } else {
+    document.getElementById('pwdErr').textContent = '密码错误，请重试';
+    document.getElementById('pwdInput').value = '';
+  }
+}
+document.getElementById('pwdInput').addEventListener('keydown', e => { if(e.key==='Enter') checkPwd(); });
+
+function changePwd() {
+  const oldV = document.getElementById('oldPwd').value;
+  const newV = document.getElementById('newPwd').value;
+  if (oldV !== getPwd()) { showToast('⚠️ 旧密码错误', 'warn'); return; }
+  if (newV.length < 4) { showToast('⚠️ 新密码至少4位', 'warn'); return; }
+  localStorage.setItem('adminPwd', newV);
+  document.getElementById('oldPwd').value = '';
+  document.getElementById('newPwd').value = '';
+  showToast('✅ 密码已修改');
+}
+
+// ========== 知识库操作 ==========
+function getKB() { try { return JSON.parse(localStorage.getItem('teacherKB') || '[]'); } catch(e) { return []; } }
+function saveKB(data) { localStorage.setItem('teacherKB', JSON.stringify(data)); }
+
+let editingIdx = -1;
+
+function init() {
+  // 加载设置
+  document.getElementById('profileName').value = localStorage.getItem('teacherName') || '老师';
+  document.getElementById('profileRole').value = localStorage.getItem('teacherRole') || '您的专属 AI 数字助教';
+  document.getElementById('profileWelcome').value = localStorage.getItem('teacherWelcome') || '';
+  renderDashboard();
+  renderKB();
+  renderQuestions();
+  renderQStats();
+}
+
+function renderDashboard() {
+  const kb = getKB();
+  const questions = getQuestions();
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-icon">📚</div>
+      <div class="stat-val">${kb.length}</div>
+      <div class="stat-label">知识库条目</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💡</div>
+      <div class="stat-val">${kb.filter(i=>i.q&&i.a).length}</div>
+      <div class="stat-label">有效问答对</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📝</div>
+      <div class="stat-val">${questions.length}</div>
+      <div class="stat-label">搜集问题数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📊</div>
+      <div class="stat-val">${kb.reduce((s,i)=>(i.a?s+i.a.length:s), 0)}</div>
+      <div class="stat-label">总字符数</div>
+    </div>
+  `;
+  const recent = [...kb].slice(-5).reverse();
+  document.getElementById('recentList').innerHTML = recent.length
+    ? recent.map((item,i) => `
+      <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);align-items:flex-start">
+        <div style="width:28px;height:28px;border-radius:50%;background:rgba(107,92,231,0.2);display:flex;align-items:center;justify-content:center;font-size:12px;color:#8B7FF0;flex-shrink:0">${i+1}</div>
+        <div>
+          <div style="font-size:14px;font-weight:500;color:#8B7FF0;margin-bottom:4px">${escHtml(item.q)}</div>
+          <div style="font-size:13px;color:var(--muted)">${escHtml(item.a?.slice(0,80))}${item.a?.length>80?'…':''}</div>
+        </div>
+      </div>
+    `).join('')
+    : '<div style="color:var(--muted);font-size:13px;padding:12px 0">暂无数据</div>';
+}
+
+function renderKB() {
+  const kb = getKB();
+  const query = (document.getElementById('kbSearch')?.value || '').toLowerCase();
+  const filtered = kb.map((item,idx) => ({...item, _idx: idx}))
+    .filter(item => !query || item.q?.toLowerCase().includes(query) || item.a?.toLowerCase().includes(query));
+
+  const tbody = document.getElementById('kbTableBody');
+  const empty = document.getElementById('kbEmpty');
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  tbody.innerHTML = filtered.map((item, i) => `
+    <tr class="kb-row">
+      <td><span class="kb-idx">${item._idx + 1}</span></td>
+      <td><div class="kb-q">${escHtml(item.q)}</div></td>
+      <td><div class="kb-a">${escHtml(item.a)}</div></td>
+      <td>
+        <div class="kb-actions">
+          <button class="btn btn-ghost btn-sm" onclick="openEditModal(${item._idx})">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteItem(${item._idx})">🗑️</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openAddModal() {
+  editingIdx = -1;
+  document.getElementById('modalTitle').textContent = '➕ 添加问答';
+  document.getElementById('modalQ').value = '';
+  document.getElementById('modalA').value = '';
+  document.getElementById('kbModal').classList.add('active');
+  setTimeout(() => document.getElementById('modalQ').focus(), 100);
+}
+
+function openEditModal(idx) {
+  const kb = getKB();
+  editingIdx = idx;
+  document.getElementById('modalTitle').textContent = '✏️ 编辑问答';
+  document.getElementById('modalQ').value = kb[idx]?.q || '';
+  document.getElementById('modalA').value = kb[idx]?.a || '';
+  document.getElementById('kbModal').classList.add('active');
+}
+
+function closeModal() { document.getElementById('kbModal').classList.remove('active'); }
+
+function saveKBItem() {
+  const q = document.getElementById('modalQ').value.trim();
+  const a = document.getElementById('modalA').value.trim();
+  if (!q || !a) { showToast('⚠️ 问题和答案不能为空', 'warn'); return; }
+  const kb = getKB();
+  if (editingIdx >= 0) {
+    kb[editingIdx] = { q, a };
+    showToast('✅ 已更新');
+  } else {
+    kb.push({ q, a });
+    showToast('✅ 已添加');
+  }
+  saveKB(kb);
+  closeModal();
+  renderKB();
+  renderDashboard();
+}
+
+function deleteItem(idx) {
+  if (!confirm('确定删除这条问答吗？')) return;
+  const kb = getKB();
+  kb.splice(idx, 1);
+  saveKB(kb);
+  renderKB();
+  renderDashboard();
+  showToast('🗑️ 已删除');
+}
+
+// ========== 导入/导出 ==========
+function importJSON() {
+  const raw = document.getElementById('importJson').value.trim();
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) throw new Error();
+    const valid = arr.filter(i => i.q && i.a);
+    const kb = getKB();
+    kb.push(...valid);
+    saveKB(kb);
+    renderKB(); renderDashboard();
+    showToast(`✅ 导入成功 ${valid.length} 条`);
+    document.getElementById('importJson').value = '';
+  } catch(e) { showToast('⚠️ JSON 格式错误，请检查', 'warn'); }
+}
+
+function importText() {
+  const raw = document.getElementById('importText').value.trim();
+  const lines = raw.split('\n').filter(l => l.includes('|'));
+  const items = lines.map(l => {
+    const [q, ...rest] = l.split('|');
+    return { q: q.trim(), a: rest.join('|').trim() };
+  }).filter(i => i.q && i.a);
+  if (!items.length) { showToast('⚠️ 未找到有效数据', 'warn'); return; }
+  const kb = getKB();
+  kb.push(...items);
+  saveKB(kb);
+  renderKB(); renderDashboard();
+  showToast(`✅ 导入成功 ${items.length} 条`);
+  document.getElementById('importText').value = '';
+}
+
+function exportKB() {
+  const kb = getKB();
+  const blob = new Blob([JSON.stringify(kb, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '知识库_' + new Date().toLocaleDateString('zh-CN').replace(/\//g, '-') + '.json';
+  a.click();
+  showToast('📥 已导出知识库');
+}
+
+function exportAll() {
+  const data = {
+    kb: getKB(),
+    name: localStorage.getItem('teacherName'),
+    role: localStorage.getItem('teacherRole'),
+    welcome: localStorage.getItem('teacherWelcome'),
+    exportTime: new Date().toLocaleString('zh-CN')
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '数字分身数据备份_' + new Date().toLocaleDateString('zh-CN').replace(/\//g, '-') + '.json';
+  a.click();
+  showToast('📦 已导出全部数据');
+}
+
+function clearAll() {
+  if (!confirm('⚠️ 确定清空全部知识库吗？此操作不可恢复！')) return;
+  saveKB([]);
+  renderKB(); renderDashboard();
+  showToast('🗑️ 已清空知识库');
+}
+
+// ========== 数字人设置 ==========
+function saveProfile() {
+  const name = document.getElementById('profileName').value.trim() || '老师';
+  const role = document.getElementById('profileRole').value.trim();
+  const welcome = document.getElementById('profileWelcome').value.trim();
+  localStorage.setItem('teacherName', name);
+  localStorage.setItem('teacherRole', role);
+  if (welcome) localStorage.setItem('teacherWelcome', welcome);
+  showToast('✅ 设置已保存，刷新前台即可生效');
+}
+
+// ========== 页面切换 ==========
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+  if (id === 'knowledge') renderKB();
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'questions') { renderQuestions(); renderQStats(); }
+}
+
+// ========== Toast ==========
+function showToast(msg, type) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  if (type === 'warn') t.style.borderColor = 'rgba(255,167,38,0.4)';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// 弹窗点击外部关闭
+document.getElementById('kbModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ========== 问题搜集 ==========
+function getQuestions() { try { return JSON.parse(localStorage.getItem('teacherQuestions') || '[]'); } catch(e) { return []; } }
+function saveQuestions(data) { localStorage.setItem('teacherQuestions', JSON.stringify(data)); }
+
+function renderQStats() {
+  const questions = getQuestions();
+  document.getElementById('qStatsGrid').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-icon">📝</div>
+      <div class="stat-val">${questions.length}</div>
+      <div class="stat-label">提交问题总数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📚</div>
+      <div class="stat-val">${getKB().length}</div>
+      <div class="stat-label">当前知识库条目</div>
+    </div>
+  `;
+}
+
+function renderQuestions() {
+  const questions = getQuestions();
+  const query = (document.getElementById('qSearch')?.value || '').toLowerCase();
+  const filtered = questions.filter(q => !query || q.text?.toLowerCase().includes(query));
+
+  const list = document.getElementById('qList');
+  const empty = document.getElementById('qEmpty');
+  const card = document.getElementById('qCard');
+
+  if (filtered.length === 0) {
+    list.innerHTML = '';
+    card.style.padding = '0';
+    empty.style.display = 'block';
+    if (questions.length > 0 && query) {
+      empty.querySelector('div').textContent = '未找到匹配的问题';
+    }
+    return;
+  }
+  card.style.padding = '22px';
+  empty.style.display = 'none';
+
+  list.innerHTML = filtered.map((item, i) => `
+    <div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);align-items:flex-start" id="q-item-${i}">
+      <div style="width:28px;height:28px;border-radius:50%;background:rgba(255,167,38,0.15);display:flex;align-items:center;justify-content:center;font-size:12px;color:#FFA726;flex-shrink:0">${questions.indexOf(item) + 1}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:6px;word-break:break-all">${escHtml(item.text)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px">提交时间：${item.time || '未知'}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-success btn-sm" onclick="convertToKB('${escHtml(item.text).replace(/'/g, "\\'")}')">📚 转为知识库</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteQuestion(${questions.indexOf(item)})">🗑️ 删除</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function convertToKB(questionText) {
+  // 打开添加弹窗，预先填入问题
+  openAddModal();
+  document.getElementById('modalQ').value = questionText;
+  document.getElementById('modalTitle').textContent = '📚 转为知识库条目';
+  showToast('已将问题填入，请填写答案后保存');
+}
+
+function deleteQuestion(idx) {
+  if (!confirm('确定删除这条问题记录吗？')) return;
+  const questions = getQuestions();
+  questions.splice(idx, 1);
+  saveQuestions(questions);
+  renderQuestions();
+  renderQStats();
+  showToast('🗑️ 已删除');
+}
+
+function clearQuestions() {
+  if (!confirm('⚠️ 确定清空所有搜集的问题记录吗？')) return;
+  saveQuestions([]);
+  renderQuestions();
+  renderQStats();
+  showToast('🗑️ 已清空问题记录');
+}
+
+function exportQuestions() {
+  const questions = getQuestions();
+  if (!questions.length) { showToast('⚠️ 暂无问题可导出', 'warn'); return; }
+  const blob = new Blob([JSON.stringify(questions, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '搜集问题_' + new Date().toLocaleDateString('zh-CN').replace(/\//g, '-') + '.json';
+  a.click();
+  showToast('📥 已导出搜集问题');
+}
+</script>
+</body>
+</html>
