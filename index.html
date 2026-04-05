@@ -587,7 +587,7 @@ function sendMessage() {
       'Authorization': 'Bearer ' + API_KEY
     },
     body: JSON.stringify({
-      model: 'THUDM/glm-4-flash',
+      model: 'THUDM/GLM-4-9B-0414',
       messages: [{ role: 'system', content: SYSTEM_PROMPT }].concat(conversationHistory),
       max_tokens: 800,
       temperature: 0.75
