@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>罗蒙教授 · 普外科健康顾问</title>
+<title>罗蒙教授 · AI健康顾问（觉醒版）</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -312,10 +312,20 @@
     border-radius: 50%; background: #4CAF50;
     margin-right: 5px;
   }
+  .ai-badge {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 6px;
+  }
 
   @media (max-width: 640px) {
     .sidebar { display: none; }
-    .topbar-title span { display: none; }
+    .topbar-title span:not(.ai-badge):not(.status-dot) { display: none; }
+    .ai-badge { font-size: 10px !important; }
   }
 </style>
 </head>
@@ -325,8 +335,9 @@
 <div class="topbar">
   <div class="topbar-title">
     <span class="status-dot"></span>
-    罗蒙教授 · 普外科健康顾问
+    罗蒙教授 · AI健康顾问（觉醒版）
     <span>| 上海市卫健委</span>
+    <span class="ai-badge">🤖 AI已接入</span>
   </div>
   <div class="topbar-actions">
     <button class="btn-icon" id="voiceTopBtn" onclick="toggleVoice()" title="语音朗读">🔊</button>
@@ -391,7 +402,23 @@
 
 <script src="qrcode.min.js"></script>
 <script>
-// ========== 知识库 ==========
+// ========== OpenRouter 大模型配置 ==========
+const OPENROUTER_API_KEY = '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';
+const OPENROUTER_MODEL = 'anthropic/claude-3-haiku'; // 免费模型
+
+const SYSTEM_PROMPT = `你是罗蒙教授的AI健康顾问数字分身。罗蒙教授的详细信息如下：
+
+【个人简介】罗蒙，男，1967年10月出生，博士，主任医师，教授，中共党员。上海市卫健委副主任、机关党委书记。上海交通大学医学院附属第九人民医院普外科肝胆组学科负责人。
+
+【学术成就】长期从事普外科临床和基础科学研究，在肝胆胰等消化道肿瘤和门静脉高压症的诊治上有较高造诣。能独立完成胰十二指肠切除术、门高压断流手术+脾肾分流、左右半肝切除术、胃癌根治术、低位直肠癌保肛手术等所有普外科手术。发表SCI及核心期刊论文100余篇，以第一作者和通讯作者发表SCI论文20余篇。参编《施维锦胆道外科学》等专著。作为第二完成人，研究成果获上海市科技进步二等奖。
+
+【社会任职】上海胆道会诊中心特约专家，《中华普通外科杂志》特约编委，《肝胆胰外科杂志》编委，中华医学会普外科分会门高压学组委员，上海医学会普外科分会肝脏学组副组长等。
+
+【对话风格】你用第一人称"我是罗蒙教授…"或"根据我的临床经验…"来回答，语气专业、温和、有权威感，像一位真实的医学专家在解答患者问题。回答时用"我"指代罗蒙教授本人。回答要专业但易懂，适当引用临床经验。如涉及急性危重情况，提醒患者立即就近就医。
+
+【重要】你只能回答与医学、健康、普外科相关的问题。如果用户询问与医学无关的话题，请礼貌引导回到健康咨询话题。`;
+
+var conversationHistory = [];
 function getKB() { try { return JSON.parse(localStorage.getItem('teacherKB') || '[]'); } catch(e) { return []; } }
 var defaultKB = [
   // ─── 通用 ───
@@ -540,11 +567,46 @@ function sendMessage() {
   input.value = '';
   input.style.height = 'auto';
   showTyping();
-  setTimeout(function() {
-    var answer = findAnswer(text);
+
+  // 添加用户消息到对话历史
+  conversationHistory.push({ role: 'user', content: text });
+
+  // 调用 OpenRouter 大模型
+  fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + OPENROUTER_API_KEY,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://4ktbgd9gys-cyber.github.io/digital-teacher-luomeng/',
+      'X-Title': '罗蒙教授AI健康顾问'
+    },
+    body: JSON.stringify({
+      model: OPENROUTER_MODEL,
+      messages: [{ role: 'system', content: SYSTEM_PROMPT }].concat(conversationHistory),
+      max_tokens: 800,
+      temperature: 0.7
+    })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
     removeTyping();
+    var answer;
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+      answer = data.choices[0].message.content.trim();
+    } else if (data.error) {
+      // API 出错，回退到知识库
+      answer = findAnswer(text);
+    } else {
+      answer = findAnswer(text);
+    }
+    conversationHistory.push({ role: 'assistant', content: answer });
     addMessage('bot', answer, true);
-  }, 600 + Math.random() * 600);
+  })
+  .catch(function(err) {
+    removeTyping();
+    var fallback = findAnswer(text);
+    addMessage('bot', fallback, true);
+  });
 }
 
 function showTyping() {
@@ -573,6 +635,7 @@ function autoResize(el) {
 
 function clearChat() {
   document.getElementById('messages').innerHTML = '';
+  conversationHistory = []; // 清空大模型对话历史
   showToast('对话已清空');
 }
 
