@@ -562,7 +562,12 @@ function addMessage(type, text, autoSpeak) {
 function sendMessage() {
   var input = document.getElementById('msgInput');
   var text = input.value.trim();
-  if (!text) return;
+  console.log('[DEBUG] sendMessage called, text:', text);
+  console.log('[DEBUG] WORKER_URL:', WORKER_URL);
+  if (!text) {
+    console.log('[DEBUG] 空消息，不发送');
+    return;
+  }
   addMessage('user', text, false);
   input.value = '';
   input.style.height = 'auto';
@@ -571,6 +576,8 @@ function sendMessage() {
   // 添加用户消息到对话历史
   conversationHistory.push({ role: 'user', content: text });
 
+  console.log('[DEBUG] 开始调用 Worker:', WORKER_URL);
+  
   // 通过 Cloudflare Worker 调用大模型（API Key 不暴露在前端）
   fetch(WORKER_URL, {
     method: 'POST',
@@ -582,8 +589,12 @@ function sendMessage() {
       temperature: 0.75
     })
   })
-  .then(function(res) { return res.json(); })
+  .then(function(res) { 
+    console.log('[DEBUG] Worker 响应状态:', res.status);
+    return res.json(); 
+  })
   .then(function(data) {
+    console.log('[DEBUG] Worker 返回数据:', JSON.stringify(data).substring(0, 200));
     removeTyping();
     var answer;
     if (data.choices && data.choices[0] && data.choices[0].message) {
@@ -602,7 +613,7 @@ function sendMessage() {
   })
   .catch(function(err) {
     removeTyping();
-    console.warn('Worker 调用失败:', err.message);
+    console.error('[DEBUG] Worker 调用失败:', err.message, err);
     var kbAnswer = findAnswer(text);
     addMessage('bot', kbAnswer, true);
   });
