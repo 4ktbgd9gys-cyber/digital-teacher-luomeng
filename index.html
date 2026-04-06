@@ -402,10 +402,10 @@
 
 <script src="qrcode.min.js"></script>
 <script>
-// ========== 硅基流动大模型配置 ==========
-// 硅基流动 API（国内直连，支持 Claude 等模型）
-const API_KEY = 'sk-ilqauwdmqhekycnbruxzwatkdncwljzjkaafgxsmnusxdhup';
-const API_BASE = 'https://api.siliconflow.cn/v1/chat/completions';
+// ========== 智谱AI大模型配置 ==========
+// 智谱AI官方 API（国内直连，GLM-4-Flash 免费额度充足）
+const API_KEY = '873fe7d719cc4c9e88d1f352989e78dd.gakllPFirC087oXO';
+const API_BASE = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 
 const SYSTEM_PROMPT = `你是罗蒙教授的AI健康顾问数字分身。罗蒙教授的详细信息如下：
 
@@ -577,9 +577,9 @@ function sendMessage() {
   // 添加用户消息到对话历史
   conversationHistory.push({ role: 'user', content: text });
 
-  console.log('[DEBUG] 开始调用硅基流动:', API_BASE);
+  console.log('[DEBUG] 开始调用智谱AI:', API_BASE);
   
-  // 直接调用硅基流动 API（国内直连）
+  // 直接调用智谱AI API（国内直连）
   fetch(API_BASE, {
     method: 'POST',
     headers: { 
@@ -587,14 +587,14 @@ function sendMessage() {
       'Authorization': 'Bearer ' + API_KEY
     },
     body: JSON.stringify({
-      model: 'THUDM/GLM-4-9B-0414',
+      model: 'glm-4-flash',
       messages: [{ role: 'system', content: SYSTEM_PROMPT }].concat(conversationHistory),
       max_tokens: 800,
       temperature: 0.75
     })
   })
   .then(function(res) { 
-    console.log('[DEBUG] 硅基流动响应状态:', res.status);
+    console.log('[DEBUG] 智谱AI响应状态:', res.status);
     return res.json(); 
   })
   .then(function(data) {
